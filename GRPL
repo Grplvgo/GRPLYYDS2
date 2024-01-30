@@ -1,0 +1,100 @@
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local HttpService = game:GetService("HttpService")
+
+local OrionLib = {
+	Elements = {},
+	ThemeObjects = {},
+	Connections = {},
+	Flags = {},
+	Themes = {
+		Default = {
+			Main = Color3.fromRGB(34, 34, 34),
+			Second = Color3.fromRGB(45, 44, 45),
+			Stroke = Color3.fromRGB(60, 60, 60),
+			Divider = Color3.fromRGB(60, 60, 60),
+			Text = Color3.fromRGB(225, 191, 102),
+			TextDark = Color3.fromRGB(255, 255, 200)
+		}
+	},
+	SelectedTheme = "Default",
+	Folder = nil,
+	SaveCfg = false
+}
+
+--Feather Icons https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Created by 7kayoh
+local Icons = {}
+
+local Success, Response = pcall(function()
+	Icons = HttpService:JSONDecode(game:HttpGetAsync("https://raw.githubusercontent.com/evoincorp/lucideblox/master/src/modules/util/icons.json")).icons
+end)
+
+if not Success then
+	warn("\nOrion Library - Failed to load Feather Icons. Error code: " .. Response .. "\n")
+end	
+
+local function GetIcon(IconName)
+	if Icons[IconName] ~= nil then
+		return Icons[IconName]
+	else
+		return nil
+	end
+end   
+
+local Orion = Instance.new("ScreenGui")
+Orion.Name = "Orion"
+if syn then
+	syn.protect_gui(Orion)
+	Orion.Parent = game.CoreGui
+else
+	Orion.Parent = gethui() or game.CoreGui
+end
+
+if gethui then
+	for _, Interface in ipairs(gethui():GetChildren()) do
+		if Interface.Name == Orion.Name and Interface ~= Orion then
+			Interface:Destroy()
+		end
+	end
+else
+	for _, Interface in ipairs(game.CoreGui:GetChildren()) do
+		if Interface.Name == Orion.Name and Interface ~= Orion then
+			Interface:Destroy()
+		end
+	end
+end
+
+function OrionLib:IsRunning()
+	if gethui then
+		return Orion.Parent == gethui()
+	else
+		return Orion.Parent == game:GetService("CoreGui")
+	end
+
+end
+
+local function AddConnection(Signal, Function)
+	if (not OrionLib:IsRunning()) then
+		return
+	end
+	local SignalConnect = Signal:Connect(Function)
+	table.insert(OrionLib.Connections, SignalConnect)
+	return SignalConnect
+end
+
+task.spawn(function()
+	while (OrionLib:IsRunning()) do
+		wait()
+	end
+
+	for _, Connection in next, OrionLib.Connections do
+		Connection:Disconnect()
+	end
+end)
+
+local function MakeDraggable(DragPoint, Main)
+	pcall(function()
+		local Dragging, DragInput, MousePos, FramePos = false
